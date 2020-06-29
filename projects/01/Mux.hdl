@@ -14,5 +14,8 @@ CHIP Mux {
     OUT out;
 
     PARTS:
-    // Put your code here:
+    Nand (a=a, b=sel, out=selnandA);
+    And (a=a, b=selnandA, out=aAndnandA);
+    And (a=b, b=sel, out=selAndb);
+    Xor(a=aAndnandA, b=selAndb, out=out);
 }
