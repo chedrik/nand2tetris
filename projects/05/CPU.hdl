@@ -39,5 +39,45 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // instruction handling between A/C
+    Mux16 (a=instruction, b=outALU, sel=instruction[15], out=muxOut1);
+    ARegister (in=muxOut1, load=loadA, out=outA, out[0..14]=addressM);
+    Not(in=instruction[15], out=aOrC);
+    Or(a=instruction[5], b=aOrC, out=loadA);
+    
+    // ALU handling
+    Mux16 (a=outA, b=inM, sel=instruction[12], out=muxOut2);
+    And (a=instruction[4], b=instruction[15], out=dLoad);
+    DRegister (in=outALU, load=dLoad, out=outD);
+    ALU (x=outD, y=muxOut2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=outALU, out=outM, zr=zr, ng=ng);
+    Mux(a=false,b=instruction[3],sel=instruction[15],out=writeM);
+
+    // Jump handling
+    DMux8Way (in=true, sel=instruction[0..2], a=null, b=JGT, c=JEQ, d=JGE, e=JLT, f=JNE, g=JLE, h=JMP);
+    Not (in=zr, out=notZero);
+    Not (in=ng, out=notNeg);
+
+    And (a=notZero, b=notNeg, out=PosNonZero);
+    And (a=notZero, b=ng, out=NegNonZero);
+    Or (a=PosNonZero, b=zr, out=PosOrZero);
+    Or (a=ng, b=zr, out=NegOrZero);
+
+    And (a=JGT, b=PosNonZero, out=doJGT);
+    And (a=JEQ, b=zr, out=doJEQ);
+    And (a=JGE, b=PosOrZero, out=doJGE);
+    And (a=JLT, b=NegNonZero, out=doJLT);
+    And (a=JNE, b=notZero, out=doJNE);
+    And (a=JLE, b=NegOrZero, out=doJLE);
+    // Dumb 7 wayOR b/c of no sub-bussing internal pins. Determines if any jump is true
+    Or (a=doJGT, b=doJEQ, out=temp);
+    Or (a=temp, b=doJGE, out=temp1);
+    Or (a=temp1, b=doJLT, out=temp2);
+    Or (a=temp2, b=doJNE, out=temp3);
+    Or (a=temp3, b=doJLE, out=temp4);
+    Or (a=temp4, b=JMP, out=temp5);
+    And (a=temp5, b=instruction[15], out=pcLoad);
+
+    // counter handling
+    Not (in=pcLoad, out=pcInc);
+    PC (in=outA, inc=pcInc, load=pcLoad, reset=reset, out[0..14]=pc);
 }
