@@ -1,0 +1,153 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/09/Square/Square.jack
+
+/** Implements a graphical square. */
+class Square {
+
+   field int x, y; // screen location of the square's top-left corner
+   field int speed; // pixels to move per frame
+   field int size; // Number of pixels for size
+   field int rx, ry; // pseudo random x,y coord
+
+   /** Constructs a new square with a given location. */
+   constructor Square new(int Ax, int Ay, int Size) {
+      let x = Ax;
+      let y = Ay;
+      let rx = 50;
+      let ry = 150;
+      let speed = 1;
+      let size = Size;
+      do draw();
+      return this;
+   }
+
+   /** Disposes this square. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Randomly place square */
+   method void place() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + 3, y + 3);
+      let x = rx;
+      let y = ry;
+      do Sys.wait(15);  // delays the next movement
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + 3, y + 3);
+      return;
+   }
+
+   /** increment rx,ry */
+   method void inc() {
+      do draw();
+      if (rx < 450) {
+         let rx = rx + 38;
+      } else {
+         let rx = 5;
+      }
+      if (ry < 200) {
+         let ry = ry + 27;
+      } else {
+         let ry = 2;
+      }
+      return;
+   }
+
+   /** fetches square coord */
+   method Array getCoord() {
+      var Array v;
+      let v = Array.new(4);
+      let v[0] = x;
+      let v[1] = y;
+      let v[2] = (x+size);
+      let v[3] = (y+size);
+      return v;
+   }
+
+   /** check overlap with a goal square */
+   method boolean overlap(Square square) {
+      var Array goal_coord;
+      var boolean isOverlap;
+      let goal_coord = square.getCoord();
+      
+      if ((goal_coord[0] > (x-3)) & (goal_coord[2] < (x+size+3)) & (goal_coord[1] > (y-3)) & (goal_coord[3] < (y+size+3))) {
+         let isOverlap = true;
+      } else {
+         let isOverlap = false;
+      }
+      do goal_coord.dispose();
+      return isOverlap;
+   }
+
+   /** Draws the square on the screen. */
+   method void draw() {
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+   /** Erases the square from the screen. */
+   method void erase() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+   /** Increments the speed. */
+   method void incSpeed() {
+      let speed = speed + 1;
+      return;
+   }
+
+     /** Moves the square up by speed pixels. */
+   method void moveUp() {
+      if (y > (speed-1)) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, (y + size) - speed, x + size, y + size);
+         let y = y - speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + speed);
+      }
+      return;
+   }
+
+   /** Moves the square down by speed pixels. */
+   method void moveDown() {
+      if ((y + size) < 254) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + speed);
+         let y = y + speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, (y + size) - speed, x + size, y + size);
+      }
+      return;
+   }
+
+   /** Moves the square left by speed pixels. */
+   method void moveLeft() {
+      if (x > (speed-1)) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle((x + size) - speed, y, x + size, y + size);
+         let x = x - speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + speed, y + size);
+      }
+      return;
+   }
+
+   /** Moves the square right by speed pixels. */
+   method void moveRight() {
+      if ((x + size) < 510) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + speed, y + size);
+         let x = x + speed;
+         do Screen.setColor(true);
+         do Screen.drawRectangle((x + size) - speed, y, x + size, y + size);
+      }
+      return;
+   }
+}
