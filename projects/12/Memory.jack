@@ -9,26 +9,139 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
+    static Array memory, free, NO_BLOCK;
+    static int free_l, free_next, alloc_size;
 
-    /** Initializes the class. */
+    /** Initializes class */
     function void init() {
+        let memory = 0;
+        let free = 2048;
+        let NO_BLOCK = 16384;   // means no block found
+        let free_l = 0;
+        let free_next = 1;
+        let alloc_size = -1;
+        let free[free_l] = 16384-2048;
+        let free[free_next] = null;
+        return;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return memory[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let memory[address] = value;
+        return;
     }
 
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
+        var Array prev, found;
+
+        let prev = Memory.best_fit(size);
+        if (prev = NO_BLOCK) {
+            let found = null;    // none found
+        } else {
+            if (prev = null) {
+                let found = free;
+                let free = Memory.do_alloc(found, size);
+            } else {
+                let found = prev[free_next];
+                let prev[free_next] = Memory.do_alloc(found, size);
+            }
+        }
+        return found + 1;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-    }    
+        var int alloc_size;
+        var Array prev, next;
+
+        let alloc_size = o[alloc_size];
+        let o = o - 1;
+        let prev = Memory.find_prev_free(o);
+
+        if (prev = null) {
+            let o[free_l] = alloc_size;
+            let o[free_next] = free;
+            let free = o;
+            let prev = o;
+        } else {
+            if ((prev + prev[free_l]) = o) {
+                let prev[free_l] = prev[free_l] + alloc_size;
+            } else {
+                let o[free_l] = alloc_size;
+                let o[free_next] = prev[free_next];
+                let prev[free_next] = o;
+                let prev = o;
+            }
+        }
+
+        if( (prev + prev[free_l]) = prev[free_next] ) {
+            // join prev free with next free.
+            let next = prev[free_next];
+            let prev[free_l] = prev[free_l] + next[free_l];
+            let prev[free_next] = next[free_next];
+        }
+        return;
+    }
+
+    // Helpers
+    function Array find_prev_free(Array object) {
+        var Array block;
+
+        if (free > object) {
+            return null;
+        }
+        let block = free;
+        while (~(block[free_next] = null) & (block[free_next] < object)) {
+            let block = block[free_next];
+        }
+        return block;
+    }
+
+    function Array do_alloc(Array found, int size) {
+        var Array next;
+        var int block_size;
+
+        if (found[free_l] > (size+1+2)) {
+            let next = found + size+1;
+            let next[free_next] = found[free_next];
+            let next[free_l] = found[free_l] - (next - found);
+            let found = found + 1;
+            let found[alloc_size] = size+1;
+        } else {
+            let next = found[free_next];
+            let block_size = found[free_l];
+            let found = found + 1;
+            let found[alloc_size] = block_size;
+        }
+        return next;
+    }
+
+    function Array best_fit(int size) {
+        var Array best, prev, cur;
+        var int best_size, cur_size;
+
+        let best = NO_BLOCK;
+        let best_size = 16384 - 2048;
+        let cur = free;
+        let prev = null;
+
+        while (~(cur = null)) {
+            let cur_size = cur[free_l]-1;
+            if (~(cur_size < size) & (cur_size < best_size)) {
+                let best = prev;
+                let best_size = cur_size;
+            }
+            let prev = cur;
+            let cur = cur[free_next];
+        }
+        return best;  // block just before best fit
+    }
 }
